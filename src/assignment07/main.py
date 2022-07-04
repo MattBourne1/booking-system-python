@@ -3,7 +3,6 @@
 
 # import pytest
 import math
-import os
 import csv
 import re
 from datetime import date
@@ -82,25 +81,25 @@ def recorded_response():
 # functions to help with each piece of data that needs to be collected
 def get_name():
     while True:
-        cust_name = input("\nPlease enter the customers name.\n"
-                          "(0 to skip) >>> ")
-        if cust_name == NOTHING:
+        c_name = input("\nPlease enter the customers name.\n"
+                       "[0] to skip >>> ")
+        if c_name == NOTHING:
             return NOTHING
-        elif len(cust_name) > max_length or len(cust_name) < 1:
+        elif len(c_name) > max_length or len(c_name) < 1:
             print(f"Sorry, you must enter a name between 1 and {max_length} characters.\n")
-        elif cust_name.isnumeric():
+        elif c_name.isnumeric():
             print("Sorry, your name must contain letters.\n")
         else:
             break
 
     recorded_response()
-    return cust_name.title()
+    return c_name.title()
 
 
 def get_package_description():
     while True:
         pkg_descr = input("\nPlease enter a description of the package.\n"
-                          "(0 to skip) >>> ")
+                          "[0] to skip >>> ")
         if pkg_descr == NOTHING:
             return NOTHING
         if len(pkg_descr) > max_length or len(pkg_descr) < 1:
@@ -177,7 +176,7 @@ def get_package_volume():
     while True:
         shape = input("What is the general shape of your package?\n"
                       " [S] Sphere\n"
-                      " [C] Cube\n" +
+                      " [C] Cube\n " +
                       PREVIOUS)
         if shape == NOTHING:
             return NOTHING
@@ -501,10 +500,15 @@ def exit_menu():
 
 # Helper function that will sort our customers by any dictionary key
 def sort_customers(list_of_customers, key):
-    # add try statement for, for loop
-    for customer in list_of_customers:
-        customer[KEY_PACKAGE_WEIGHT] = float(customer.get(KEY_PACKAGE_WEIGHT))
-        customer[KEY_PACKAGE_VOLUME] = float(customer.get(KEY_PACKAGE_VOLUME))
+    """
+    Sorts the customers list on the specified dictionary key
+    :return: <list>
+    """
+    for unsort_customer in list_of_customers:
+        if isfloat(unsort_customer[KEY_PACKAGE_WEIGHT]):
+            unsort_customer[KEY_PACKAGE_WEIGHT] = float(unsort_customer.get(KEY_PACKAGE_WEIGHT))
+        if isfloat(unsort_customer[KEY_PACKAGE_VOLUME]):
+            unsort_customer[KEY_PACKAGE_VOLUME] = float(unsort_customer.get(KEY_PACKAGE_VOLUME))
     return sorted(list_of_customers, key=lambda eid: eid[key])
 
 
@@ -517,6 +521,18 @@ def load_quotes():
     # add try statement
     with open(file_name, "r", newline='') as e_file:
         reader = list(csv.DictReader(e_file))
+
+    print("*BAD CUSTOMER DATA WILL NOT BE INCLUDED*")
+    line_item_indexes = []
+    for index_line, line_item in enumerate(reader):
+        if not verified_dictionary(line_item):
+            print(f"Customer #{index_line+1} not loaded.\n")
+            line_item_indexes.append(index_line)
+
+    line_item_indexes.reverse()
+    for n in line_item_indexes:
+        del reader[n]
+
     return sort_customers(reader, KEY_CUSTOMER_NAME)
 
 
@@ -554,10 +570,10 @@ def verified_dictionary(verify_dict):
     if not isfloat(verify_weight):
         print("*Invalid Weight - No Number*")
         verified = False
-    if verify_weight > max_weight:
+    elif float(verify_weight) > max_weight:
         print("*Invalid Weight - Too High*")
         verified = False
-    if verify_weight <= 0:
+    elif float(verify_weight) <= 0:
         print("*Invalid Weight*")
         verified = False
 
@@ -565,10 +581,10 @@ def verified_dictionary(verify_dict):
     if not isfloat(verify_volume):
         print("*Invalid Volume - No Number*")
         verified = False
-    if verify_volume > max_volume:
+    elif float(verify_volume) > max_volume:
         print("*Invalid Volume - Too High*")
         verified = False
-    if verify_volume <= 0:
+    elif float(verify_volume) <= 0:
         print("*Invalid Volume*")
         verified = False
 
@@ -662,9 +678,9 @@ def print_customer(customer_dict):
                                                                                       "{:<30}".format(
         " Dangerous Contents") + "| " + customer_dict.get(KEY_DANGEROUS_CONTENTS) + "\n"
                                                                                     "{:<30}".format(
-        " Package Weight") + "| " + str("{:.2f}".format(customer_dict.get(KEY_PACKAGE_WEIGHT))) +
+        " Package Weight") + "| " + str(customer_dict.get(KEY_PACKAGE_WEIGHT)) +
           " [kg]\n"
-          "{:<30}".format(" Package Volume") + "| " + str("{:.2f}".format(customer_dict.get(KEY_PACKAGE_VOLUME))) +
+          "{:<30}".format(" Package Volume") + "| " + str(customer_dict.get(KEY_PACKAGE_VOLUME)) +
           " [m^3]\n"
           "{:<30}".format(" Delivery Date") + "| " + customer_dict.get(KEY_DELIVERY_DATE) +
           " (in " + str(customer_dict.get(KEY_DAYS)) + " days)\n"
@@ -726,6 +742,7 @@ def print_all_deliveries(customer_list):
         print("None")
         return
 
+    customer_list = sort_customers(customer_list, KEY_CUSTOMER_NAME)
     for customer_qt in customer_list:
         print(bar + "{:^35}".format(customer_qt.get(KEY_CUSTOMER_NAME)) + space +
               "{:^8}".format(customer_qt.get(KEY_DANGEROUS_CONTENTS)) + space +
@@ -872,8 +889,11 @@ if __name__ == '__main__':
                     num_matches += 1
                     print(f"\nMatch Number {num_matches} OF {tot_matches} Initial Data")
 
-                    print_customer(customer)
                     verified_date, previous_days_to = verify_future_date(customer)
+                    if int(previous_days_to) < 1:
+                        customer[KEY_DAYS] = NOTHING
+
+                    print_customer(customer)
                     if not verified_date:
                         print(f"Sorry, only shipments with future delivery dates can be edited.\n")
                         continue
@@ -902,7 +922,6 @@ if __name__ == '__main__':
             # out of bounds errors
             delete_quotes.reverse()
             for number in delete_quotes:
-                print(number)
                 del customer_packages[number]
 
         elif user_choice == UPCOMING_DELIVERIES:
