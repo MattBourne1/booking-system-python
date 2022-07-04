@@ -561,8 +561,10 @@ def verified_dictionary(verify_dict):
     # This will help determine if all the required values are in our dictionary
     verified = True
 
-    verify_DC = verify_dict.get(KEY_DANGEROUS_CONTENTS).upper()
-    if verify_DC != 'Y' and verify_DC != 'N':
+    verify_DC = str(verify_dict.get(KEY_DANGEROUS_CONTENTS))
+    if not verify_DC.isalpha():
+        verified = False
+    elif verify_DC.upper() != 'Y' and verify_DC.upper() != 'N':
         print("*Invalid Dangerous Contents Selection*")
         verified = False
 
@@ -588,9 +590,18 @@ def verified_dictionary(verify_dict):
         print("*Invalid Volume*")
         verified = False
 
-    verify_urgency = verify_dict.get(KEY_URGENT).upper()
-    if verify_urgency != 'Y' and verify_urgency != 'N':
+    verify_urgency = str(verify_dict.get(KEY_URGENT))
+    if not verify_urgency.isalpha():
+        verified = False
+    elif verify_urgency.upper() != 'Y' and verify_urgency.upper() != 'N':
         print("*Invalid Urgency Selection*")
+        verified = False
+
+    verify_id = str(verify_dict.get(KEY_INTERNATIONAL_DESTINATION))
+    if not verify_id.isalpha():
+        verified = False
+    elif verify_id.upper() != 'Y' and verify_id.upper() != 'N':
+        print("*Invalid International Destination Selection*")
         verified = False
 
     return verified
