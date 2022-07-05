@@ -33,12 +33,18 @@ customer_packages = []
 ZERO, ONE, TWO, THREE, FOUR, FIVE, SIX, SEVEN, EIGHT = "[0]", "[1]", "[2]", "[3]", "[4]", "[5]", "[6]", "[7]", "[8]"
 
 # This dictionary will help to convert our dates to a day of the year
-months = {"1": 0, "2": 31, "3": 31 + 28, "4": 31 + 28 + 31,
-          "5": 31 + 28 + 31 + 30, "6": 31 + 28 + 31 + 30 + 31, "7": 31 + 28 + 31 + 30 + 31 + 30,
+months = {"1": 0,
+          "2": 31,
+          "3": 31 + 28,
+          "4": 31 + 28 + 31,
+          "5": 31 + 28 + 31 + 30,
+          "6": 31 + 28 + 31 + 30 + 31,
+          "7": 31 + 28 + 31 + 30 + 31 + 30,
           "8": 31 + 28 + 31 + 30 + 31 + 30 + 31,
-          "9": 31 + 28 + 31 + 30 + 31 + 30 + 31 + 31, "10": 31 + 28 + 31 + 30 + 31 + 30 + 31 + 30,
-          "11": 31 + 28 + 31 + 30 + 31 + 30 + 31 + 30 + 31,
-          "12": 31 + 28 + 31 + 30 + 31 + 30 + 31 + 30 + 31 + 30}
+          "9": 31 + 28 + 31 + 30 + 31 + 30 + 31 + 31,
+          "10": 31 + 28 + 31 + 30 + 31 + 30 + 31 + 31 + 30,
+          "11": 31 + 28 + 31 + 30 + 31 + 30 + 31 + 31 + 30 + 31,
+          "12": 31 + 28 + 31 + 30 + 31 + 30 + 31 + 31 + 30 + 31 + 30}
 
 # User choices for main menu input code readability
 LOAD_CUSTOMERS = 1
@@ -223,6 +229,7 @@ def get_package_volume():
 
 
 def date_verify(date_input):
+    date_input = str(date_input)
     if re.fullmatch(date_pattern, date_input):
         return True
     else:
@@ -504,6 +511,7 @@ def sort_customers(list_of_customers, key):
     Sorts the customers list on the specified dictionary key
     :return: <list>
     """
+
     for unsort_customer in list_of_customers:
         if isfloat(unsort_customer[KEY_PACKAGE_WEIGHT]):
             unsort_customer[KEY_PACKAGE_WEIGHT] = float(unsort_customer.get(KEY_PACKAGE_WEIGHT))
@@ -519,8 +527,12 @@ def load_quotes():
     :return: <list>
     """
     # add try statement
-    with open(file_name, "r", newline='') as e_file:
-        reader = list(csv.DictReader(e_file))
+    try:
+        with open(file_name, "r", newline='') as e_file:
+            reader = list(csv.DictReader(e_file))
+    except FileNotFoundError:
+        print(f"Could not open {file_name}.")
+        return customer_packages
 
     print("*BAD CUSTOMER DATA WILL NOT BE INCLUDED*")
     line_item_indexes = []
