@@ -1,5 +1,5 @@
 import pytest
-from src.assignment07.main import months, date_to_doy, date_verify
+from src.assignment07.main import date_to_doy, date_verify, verify_future_date, KEY_DELIVERY_DATE as KEY_DD, NOTHING
 
 
 def test_date_verify():
@@ -23,3 +23,19 @@ def test_date_to_doy():
 
     for date_bad in dates_list_bad:
         assert not date_to_doy(date_bad[0]) == (date_bad[1], date_bad[2])
+
+
+def test_verify_future_date():
+    test_cases = [({KEY_DD: "01/05/1990"}, (False, NOTHING)),
+                  ({KEY_DD: "01/05/2022"}, (False, NOTHING)),
+                  ({KEY_DD: "07/04/2022"}, (False, NOTHING)),
+                  ({KEY_DD: "07/10/2022"}, (True, 6)),  # Since the date is for July 4, this test case may be different
+                  ({KEY_DD: "07/04/2023"}, (True, 365)),
+                  ({KEY_DD: "07/05/2023"}, (False, NOTHING)),
+                  ({KEY_DD: "01/05/2025"}, (False, NOTHING)),
+                  ({KEY_DD: "06/04/2023"}, (True, 335)),
+                  ({KEY_DD: "0L/O5/2023"}, (False, NOTHING)),
+                  ({KEY_DD: 2023}, (False, NOTHING))]
+
+    for case in test_cases:
+        assert verify_future_date(case[0]) == case[1]

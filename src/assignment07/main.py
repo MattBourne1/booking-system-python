@@ -18,7 +18,7 @@ date_pattern = re.compile(r'^(1[0-2]|0[1-9])/(3[01]|[12][0-9]|0[1-9])/[0-9]{4}$'
 TOTAL_DAYS = 365  # Number of days in a year
 TODAY_DATE = date.today()  # Date
 LOADED_CUSTOMERS = False
-SAVED_CUSTOMERS = False
+FILE_LOADED = False
 NOTHING = '0'
 PREVIOUS = "[0] For Previous Menu >>> "
 max_length = 30
@@ -290,13 +290,13 @@ def verify_future_date(customer_info):
     customer_dd = customer_info.get(KEY_DELIVERY_DATE)
     verified = True
     if not date_verify(customer_dd):
-        return (not verified), NOTHING
+        return not verified, NOTHING
 
     delivery_doy, delivery_year = date_to_doy(customer_dd)
     current_doy = months.get(str(TODAY_DATE.month)) + TODAY_DATE.day
 
     day_difference = ((delivery_doy - current_doy) + ((delivery_year - TODAY_DATE.year) * TOTAL_DAYS))
-    if day_difference > 0:
+    if 0 < day_difference <= TOTAL_DAYS:
         return verified, day_difference
     else:
         return not verified, NOTHING
@@ -376,11 +376,11 @@ def delete_menu():
     """
     while True:
         choice = input("\n" + "{:-^36}".format("Delete Menu") + "\n"
-                       " Please choose an option below:\n"
-                       f"   {ONE} EDIT\n"
-                       f"   {TWO} DELETE\n"
-                       f"   {ZERO} CONTINUE\n"
-                       f">>> ")
+                                                                " Please choose an option below:\n"
+                                                                f"   {ONE} EDIT\n"
+                                                                f"   {TWO} DELETE\n"
+                                                                f"   {ZERO} CONTINUE\n"
+                                                                f">>> ")
         if choice == NOTHING:
             return NOTHING
         if not choice.isnumeric():
@@ -403,16 +403,16 @@ def edit_menu(customer_dictionary):
         return customer_dictionary
     while True:
         choice = input("\n" + "{:-^36}".format("Edit Menu") + "\n"
-                       " Please choose an option to edit:\n"
-                       f"   {ONE} Customer Name\n"
-                       f"   {TWO} Package Description\n"
-                       f"   {THREE} Package Contents\n"
-                       f"   {FOUR} Package Weight\n"
-                       f"   {FIVE} Package Volume\n"
-                       f"   {SIX} Delivery Date\n"
-                       f"   {SEVEN} Delivery Location\n"
-                       f"   {EIGHT} DONE\n"
-                       " Your selection --> ")
+                                                              " Please choose an option to edit:\n"
+                                                              f"   {ONE} Customer Name\n"
+                                                              f"   {TWO} Package Description\n"
+                                                              f"   {THREE} Package Contents\n"
+                                                              f"   {FOUR} Package Weight\n"
+                                                              f"   {FIVE} Package Volume\n"
+                                                              f"   {SIX} Delivery Date\n"
+                                                              f"   {SEVEN} Delivery Location\n"
+                                                              f"   {EIGHT} DONE\n"
+                                                              " Your selection --> ")
         if not choice.isnumeric():
             print("Please enter a valid choice.")
             continue
@@ -531,42 +531,51 @@ def load_quotes():
         with open(file_name, "r", newline='') as e_file:
             reader = list(csv.DictReader(e_file))
     except FileNotFoundError:
-        print(f"Could not open {file_name}.")
+        print(f"Could not open {file_name}")
         return customer_packages
 
     print("*BAD CUSTOMER DATA WILL NOT BE INCLUDED*")
     line_item_indexes = []
     for index_line, line_item in enumerate(reader):
         if not verified_dictionary(line_item):
-            print(f"Customer #{index_line+1} not loaded.\n")
+            print(f"Customer #{index_line + 1} not loaded.\n")
             line_item_indexes.append(index_line)
 
     line_item_indexes.reverse()
     for n in line_item_indexes:
         del reader[n]
 
+    if len(customer_packages) != 0 and not FILE_LOADED:
+        for cust in customer_packages:
+            reader.append(cust)
     return sort_customers(reader, KEY_CUSTOMER_NAME)
 
 
 def save_quotes(quote_list):
     """
-    Saves list of customer quotes to csv file
+    Saves list of customer quotes to csv file, but overwrite
     """
-    e_keys = quote_list[0].keys()
-    with open(file_name, "w", newline='') as e_file:
-        dict_writer = csv.DictWriter(e_file, e_keys)
-        dict_writer.writeheader()
-        dict_writer.writerows(quote_list)
+    try:
+        e_keys = quote_list[0].keys()
+        with open(file_name, "w", newline='') as e_file:
+            dict_writer = csv.DictWriter(e_file, e_keys)
+            dict_writer.writeheader()
+            dict_writer.writerows(quote_list)
+    except:
+        print("Sorry, unexpected error save error occurred.")
 
 
 def append_quotes(quote_list):
     """
-    Saves list of customer quotes to csv file
+    Saves list of customer quotes to csv file, but appended
     """
-    e_keys = quote_list[0].keys()
-    with open(file_name, "a", newline='') as e_file:
-        dict_writer = csv.DictWriter(e_file, e_keys)
-        dict_writer.writerows(quote_list)
+    try:
+        e_keys = quote_list[0].keys()
+        with open(file_name, "a", newline='') as e_file:
+            dict_writer = csv.DictWriter(e_file, e_keys)
+            dict_writer.writerows(quote_list)
+    except:
+        print(f"Sorry, unable save to an existing file named {file_name}")
 
 
 def verified_dictionary(verify_dict):
@@ -686,7 +695,8 @@ def get_quote(customer_dictionary):
 
     least_expensive = min(final_options, key=lambda cost: cost[KEY_COST])
     print("\nBest shipping method: " + least_expensive.get(KEY_METHOD) + "\n"
-          "Price: $" + "{:.2f}".format(least_expensive.get(KEY_COST)) + "\n")
+                                                                         "Price: $" + "{:.2f}".format(
+        least_expensive.get(KEY_COST)) + "\n")
     customer_dictionary[KEY_QUOTE] = "{:.2f}".format(least_expensive.get(KEY_COST))
     return customer_dictionary
 
@@ -701,9 +711,9 @@ def print_customer(customer_dict):
                                                                                       "{:<30}".format(
         " Dangerous Contents") + "| " + customer_dict.get(KEY_DANGEROUS_CONTENTS) + "\n"
                                                                                     "{:<30}".format(
-        " Package Weight") + "| " + str(customer_dict.get(KEY_PACKAGE_WEIGHT)) +
+        " Package Weight") + "| " + str("{:.4f}".format(customer_dict.get(KEY_PACKAGE_WEIGHT))) +
           " [kg]\n"
-          "{:<30}".format(" Package Volume") + "| " + str(customer_dict.get(KEY_PACKAGE_VOLUME)) +
+          "{:<30}".format(" Package Volume") + "| " + str("{:.4f}".format(customer_dict.get(KEY_PACKAGE_VOLUME))) +
           " [m^3]\n"
           "{:<30}".format(" Delivery Date") + "| " + customer_dict.get(KEY_DELIVERY_DATE) +
           " (in " + str(customer_dict.get(KEY_DAYS)) + " days)\n"
@@ -741,8 +751,8 @@ def print_future_deliveries(customer_list):
               "{:^8}".format(customer_qt.get(KEY_DANGEROUS_CONTENTS)) + space +
               "{:^8}".format(customer_qt.get(KEY_URGENT)) + space +
               "{:^10}".format(customer_qt.get(KEY_INTERNATIONAL_DESTINATION)) + space +
-              "{:^14}".format(customer_qt.get(KEY_PACKAGE_WEIGHT)) + space +
-              "{:^16}".format(customer_qt.get(KEY_PACKAGE_VOLUME)) + space +
+              "{:^14}".format("{:.4f}".format(customer_qt.get(KEY_PACKAGE_WEIGHT))) + space +
+              "{:^16}".format("{:.4f}".format(customer_qt.get(KEY_PACKAGE_VOLUME))) + space +
               "{:^13}".format(f"${customer_qt.get(KEY_QUOTE)}") + space +
               "{:^14}".format(customer_qt.get(KEY_QUOTE_DATE)) + space +
               "{:^15}".format(customer_qt.get(KEY_DELIVERY_DATE)) + bar)
@@ -757,7 +767,8 @@ def print_all_deliveries(customer_list):
     print("{:-<143}".format(""))
     print(bar + "{:^35}".format("Name") + bar + "{:^8}".format("Danger") + bar +
           "{:^8}".format("Urgent") + bar + "{:^10}".format("Int Dest") + bar +
-          "{:^14}".format("Pckg Wt [kg]") + bar + "{:^16}".format("Pckg Vol [m^3]") + bar + "{:^13}".format("Quote") + bar +
+          "{:^14}".format("Pckg Wt [kg]") + bar + "{:^16}".format("Pckg Vol [m^3]") + bar + "{:^13}".format(
+        "Quote") + bar +
           "{:^14}".format("Quote Date") + bar + "{:^15}".format("Delivery Date") + bar)
     print("{:-<143}".format(""))
 
@@ -771,8 +782,8 @@ def print_all_deliveries(customer_list):
               "{:^8}".format(customer_qt.get(KEY_DANGEROUS_CONTENTS)) + space +
               "{:^8}".format(customer_qt.get(KEY_URGENT)) + space +
               "{:^10}".format(customer_qt.get(KEY_INTERNATIONAL_DESTINATION)) + space +
-              "{:^14}".format(customer_qt.get(KEY_PACKAGE_WEIGHT)) + space +
-              "{:^16}".format(customer_qt.get(KEY_PACKAGE_VOLUME)) + space +
+              "{:^14}".format("{:.4f}".format(customer_qt.get(KEY_PACKAGE_WEIGHT))) + space +
+              "{:^16}".format("{:.4f}".format(customer_qt.get(KEY_PACKAGE_VOLUME))) + space +
               "{:^13}".format(f"${customer_qt.get(KEY_QUOTE)}") + space +
               "{:^14}".format(customer_qt.get(KEY_QUOTE_DATE)) + space +
               "{:^15}".format(customer_qt.get(KEY_DELIVERY_DATE)) + bar)
@@ -795,6 +806,7 @@ if __name__ == '__main__':
                 continue
         elif user_choice == LOAD_CUSTOMERS:
             customer_packages = load_quotes()
+            FILE_LOADED = True
             LOADED_CUSTOMERS = True
             print(f"The customers and quotes from the file {file_name} have been loaded successfully.")
         elif user_choice == SAVE_CUSTOMERS:
@@ -931,7 +943,7 @@ if __name__ == '__main__':
 
                         print(f"\nMatch Number {num_matches} Final Data")
                         if previous_days_to < current_days_to:
-                            print(f"Your delivery date has increased by {current_days_to-previous_days_to} days.")
+                            print(f"Your delivery date has increased by {current_days_to - previous_days_to} days.")
                         elif previous_days_to > current_days_to:
                             print(f"Your delivery date has decreased by {previous_days_to - current_days_to} days.")
                         print_customer(customer)
